@@ -164,7 +164,9 @@ main(int argc, char **argv) {
 	setlocale(LC_ALL, "");
 
 	while ((chr = getchar()) != 0x1a)
-		if (table[chr])
+		if (feof(stdin))
+			break;
+		else if (table[chr])
 			printf("%lc", table[chr]);
 
 	return 0;
