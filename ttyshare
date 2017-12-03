@@ -1,0 +1,15 @@
+#!/bin/sh
+# ttyshare - share screen over network
+
+[ $# -ne 1 ] && {
+	printf 'usage: %s <port>\n' `basename $0` 1>&2
+	exit 1
+}
+
+FIFO=/tmp/ttyshare.fifo
+[ -p "$FIFO" ] || mkfifo $FIFO
+
+nc -l $1 <$FIFO &
+script -f $FIFO
+rm -f $FIFO
+
