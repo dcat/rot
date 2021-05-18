@@ -1,0 +1,129 @@
+#!/bin/sh
+
+FRETS=18
+TONES='C C# D D# E F F# G G# A A# B'
+TUNING='E A D G B E'
+
+DIATONIC_MAJ='0 2 2 1 2 2 2'
+DIATONIC_MIN='0 2 1 2 2 1 2'
+
+usage() {
+	echo 'usage: ' ${0##*/} '<key>'
+	exit 0
+}
+
+main() {
+	[ $# -eq 0 ] && usage
+
+	case "$1" in
+	*m*)
+		PROG="$DIATONIC_MIN"
+		ROOT=`note2int ${1%m}`
+		;;
+	*)
+		PROG="$DIATONIC_MAJ"
+		ROOT=`note2int $1`
+		;;
+	esac
+
+	[ -z "$ROOT" ] && {
+		usage
+		exit 0
+	}
+
+	for i in $TUNING
+	do
+		STRINGS="$STRINGS `note2int $i`"
+	done
+
+	LAST=$ROOT
+	for i in $PROG
+	do
+		LAST=$((($LAST + $i) % 12))
+		SCALE="$LAST $SCALE"
+	done
+
+	for i in $SCALE
+	do
+		NOTES="`int2note $i` $NOTES"
+	done
+	echo $NOTES
+
+	for FRET in `seq 0 $FRETS`
+	do
+		[ $(($FRET % 2)) -eq 0 ] && BG=130 || BG=136
+		[ $FRET -ne 0 ] && {
+			printf '\033[38;5;239m%2d  \033[48;5;%d;38;5;16m' $FRET $BG
+		} || {
+			printf '    '
+		}
+
+		for STRING in $STRINGS
+		do
+			is_in_key $(($STRING + $FRET)) && {
+				[ $((($STRING + $FRET) % 12)) -eq $ROOT ] && echo -n '○' || echo -n '●'
+			} || echo -n '─'
+		done
+
+		printf '\033[0m'
+
+		[ $FRET -ne 0 ] && case "$(($FRET % 12))" in
+		3|5|7|9)
+			printf '   ●' ;;
+		0)
+			printf '  ●●' ;;
+		esac
+
+		echo
+	done
+}
+
+is_in_key() {
+	for i in $SCALE
+	do
+		[ $i -eq $(($1 % 12)) ] && return 0
+	done
+
+	return 1
+}
+
+note2int() {
+	case "$1" in
+	'C')	echo 1  ;;
+	'C#')	echo 2  ;;
+	'D')	echo 3  ;;
+	'D#')	echo 4  ;;
+	'E')	echo 5  ;;
+	'F')	echo 6  ;;
+	'F#')	echo 7  ;;
+	'G')	echo 8  ;;
+	'G#')	echo 9  ;;
+	'A')	echo 10 ;;
+	'A#')	echo 11 ;;
+	'B')	echo 12 ;;
+	*)
+		echo note "'$1'" does not exist 1>&2
+		exit 1
+	esac
+}
+
+int2note() {
+	case "$(($1 % 12))" in
+	0)	echo 'B'  ;;
+	1)	echo 'C'  ;;
+	2)	echo 'C#' ;;
+	3)	echo 'D'  ;;
+	4)	echo 'D#' ;;
+	5)	echo 'E'  ;;
+	6)	echo 'F'  ;;
+	7)	echo 'F#' ;;
+	8)	echo 'G'  ;;
+	9)	echo 'G#' ;;
+	10)	echo 'A'  ;;
+	11)	echo 'A#' ;;
+	esac
+}
+
+
+main $1
+
